@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KENAKATA | AI E-Commerce</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="style.css" />
+    <script src="/socket.io/socket.io.js"></script>
+  </head>
+  <body>
+    <div class="navbar">
+      <div class="logo">KENAKATA</div>
+      <div class="nav-links">
+        <button
+          class="nav-link active"
+          data-view="shop"
+          onclick="showView('shop')"
+        >
+          LUXURY-FOCUSED
+        </button>
+        <button class="nav-link" data-view="admin" onclick="showView('admin')">
+          ADMIN
+        </button>
+        <div class="cart-icon" onclick="toggleCart()">
+          <i class="fas fa-shopping-bag"></i>
+          <span class="cart-badge" id="cartBadge">0</span>
+        </div>
+      </div>
+    </div>
+
+    <div
+      style="
+        background: #000;
+        color: #fff;
+        padding: 10px;
+        font-family: sans-serif;
+        font-weight: bold;
+      "
+    >
+      <marquee
+        behavior="scroll"
+        direction="left"
+        scrollamount="6"
+        id="marquetag"
+      >
+        "🔥 FLASH SALE: Get up to 20% OFF on all items! Limited time only. 🔥"
+      </marquee>
+    </div>
+
+    <div id="view-shop" class="view active">
+      <div class="container">
+        <div class="filter-bar">
+          <button
+            class="filter-btn active"
+            data-category="all"
+            onclick="filterProducts('all', this)"
+          >
+            All
+          </button>
+          <button
+            class="filter-btn"
+            data-category="electronics"
+            onclick="filterProducts('electronics', this)"
+          >
+            Electronics & Gadget
+          </button>
+          <button
+            class="filter-btn"
+            data-category="fashion"
+            onclick="filterProducts('fashion', this)"
+          >
+            Fashion & Style
+          </button>
+          <button
+            class="filter-btn"
+            data-category="creative"
+            onclick="filterProducts('creative', this)"
+          >
+            Creative & Artistics
+          </button>
+          <button
+            class="filter-btn"
+            data-category="beauty"
+            onclick="filterProducts('beauty', this)"
+          >
+            Health & Beauty
+          </button>
+          <button
+            class="filter-btn"
+            data-category="home"
+            onclick="filterProducts('home', this)"
+          >
+            Home & Living
+          </button>
+          <button
+            class="filter-btn"
+            data-category="sports"
+            onclick="filterProducts('sports', this)"
+          >
+            Sports & Outdoors
+          </button>
+          <button
+            class="filter-btn"
+            data-category="books"
+            onclick="filterProducts('books', this)"
+          >
+            Books & Stationery
+          </button>
+          <button
+            class="filter-btn"
+            data-category="kids"
+            onclick="filterProducts('kids', this)"
+          >
+            Kids & Toys
+          </button>
+          <button
+            class="filter-btn"
+            data-category="pets"
+            onclick="filterProducts('pets', this)"
+          >
+            Pet Supplies
+          </button>
+          <button
+            class="filter-btn"
+            data-category="automotive"
+            onclick="filterProducts('automotive', this)"
+          >
+            Automotive & Tools
+          </button>
+          <button
+            class="filter-btn"
+            data-category="gifts"
+            onclick="filterProducts('gifts', this)"
+          >
+            Gifts & Occasions
+          </button>
+        </div>
+        <div id="productsGrid" class="products-grid">
+          <div class="loading-products">✨ Curating the collection...</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="view-admin" class="view">
+      <div class="container">
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+          "
+        >
+          <div
+            style="
+              display: flex;
+              gap: 1rem;
+              border-bottom: 1px solid var(--border);
+              padding-bottom: 0.5rem;
+            "
+          >
+            <button
+              class="filter-btn admin-nav active"
+              onclick="switchAdminSection('overview', this)"
+            >
+              Overview
+            </button>
+            <button
+              class="filter-btn admin-nav"
+              onclick="switchAdminSection('products', this)"
+            >
+              Products
+            </button>
+            <button
+              class="filter-btn admin-nav"
+              onclick="switchAdminSection('orders', this)"
+            >
+              Orders
+            </button>
+          </div>
+          <button
+            id="adminLogoutBtn"
+            class="btn-primary"
+            style="background: #333"
+            onclick="adminLogout()"
+          >
+            Logout
+          </button>
+        </div>
+        <div id="adminMain"></div>
+      </div>
+    </div>
+
+    <div id="cartBackdrop" class="cart-backdrop" onclick="closeCart()"></div>
+    <div id="cartPanel" class="cart-panel">
+      <div class="cart-header">
+        <h3>Your Selection</h3>
+        <button class="cart-close" onclick="closeCart()">✕</button>
+      </div>
+      <div id="cartBody" class="cart-body">
+        <div class="empty-state">Your cart is empty</div>
+      </div>
+      <div id="cartFoot" class="cart-footer"></div>
+    </div>
+
+    <div id="productModal" class="modal">
+      <div class="modal-content">
+        <div
+          id="modalImg"
+          style="
+            height: 200px;
+            border-radius: 16px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+          "
+        ></div>
+        <div
+          id="modalTag"
+          style="
+            color: var(--accent-gold);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+          "
+        ></div>
+        <h2 id="modalName" style="margin: 0.5rem 0"></h2>
+        <div
+          id="modalPrice"
+          style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem"
+        ></div>
+        <p
+          id="modalDesc"
+          style="color: var(--text-secondary); line-height: 1.6"
+        ></p>
+        <button
+          id="modalAddBtn"
+          class="btn-add-cart"
+          style="width: 100%; margin-top: 1.5rem"
+        >
+          Add to Cart
+        </button>
+        <button
+          onclick="closeProductModal()"
+          style="
+            width: 100%;
+            margin-top: 0.5rem;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 40px;
+            padding: 0.6rem;
+          "
+        >
+          Close
+        </button>
+      </div>
+    </div>
+
+    <div id="addProductModal" class="modal">
+      <div class="modal-content">
+        <h3 id="addModalTitle">Add Product</h3>
+        <form id="productForm" enctype="multipart/form-data">
+          <div class="form-group">
+            <input
+              type="text"
+              id="newName"
+              class="form-input"
+              placeholder="Product Name"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <input
+              type="number"
+              id="newPrice"
+              class="form-input"
+              placeholder="Price"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <select id="newCategory" class="form-select">
+              <option value="electronics">Electronics & Gadget</option>
+              <option value="fashion">Fashion & Style</option>
+              <option value="creative">Creative & Artistics</option>
+              <option value="beauty">Health & Beauty</option>
+              <option value="home">Home & Living</option>
+              <option value="sports">Sports & Outdoors</option>
+              <option value="books">Books & Stationery</option>
+              <option value="kids">Kids & Toys</option>
+              <option value="pets">Pet Supplies</option>
+              <option value="automotive">Automotive & Tools</option>
+              <option value="gifts">Gifts & Occasions</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <select id="newBadge" class="form-select">
+              <option value="">No Badge</option>
+              <option value="new">New</option>
+              <option value="sale">Sale</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <input
+              type="text"
+              id="newEmoji"
+              class="form-input"
+              placeholder="Emoji (✦)"
+              value="✦"
+            />
+          </div>
+          <div class="form-group">
+            <input
+              type="number"
+              id="newStock"
+              class="form-input"
+              placeholder="Stock"
+              value="100"
+            />
+          </div>
+          <div class="form-group">
+            <input
+              type="file"
+              id="newImage"
+              class="form-input"
+              accept="image/*"
+            />
+          </div>
+          <button
+            type="button"
+            id="addModalSubmit"
+            class="btn-primary"
+            style="width: 100%"
+            onclick="submitProduct()"
+          >
+            Add to Catalog
+          </button>
+          <button
+            type="button"
+            onclick="closeAddProductModal()"
+            style="
+              width: 100%;
+              margin-top: 0.5rem;
+              background: transparent;
+              border: 1px solid var(--border);
+              border-radius: 40px;
+              padding: 0.6rem;
+            "
+          >
+            Cancel
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div id="loginModal" class="modal">
+      <div class="modal-content" style="max-width: 350px">
+        <h3>Admin Login</h3>
+        <div class="form-group">
+          <input
+            type="password"
+            id="adminPassword"
+            class="form-input"
+            placeholder="Enter Password"
+            autocomplete="off"
+          />
+        </div>
+        <button class="btn-primary" style="width: 100%" onclick="adminLogin()">
+          Login
+        </button>
+        <p
+          style="
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 1rem;
+          "
+        >
+          Demo password: <strong>admin123</strong>
+        </p>
+      </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <div class="container my-5">
+      <!-- Footer -->
+      <footer
+        class="text-center text-lg-start text-white"
+        style="background-color: #315297"
+        ;
+      >
+        <!-- Grid container -->
+        <div class="container p-4 pb-0">
+          <!-- Section: Links -->
+          <section class="">
+            <!--Grid row-->
+            <div class="row">
+              <!-- Grid column -->
+              <div class="col-md-3 col-lg-3 col-xl-3 mx-auto mt-3">
+                <h6 class="text-uppercase mb-4 font-weight-bold">
+                  Emon Group Of Company
+                </h6>
+                <p>
+                  "Quality you trust, style you love. Emon Group of Company
+                  offers a seamless shopping journey with handpicked premium
+                  products."
+                </p>
+              </div>
+              <!-- Grid column -->
+
+              <hr class="w-100 clearfix d-md-none" />
+
+              <!-- Grid column -->
+              <div class="col-md-2 col-lg-2 col-xl-2 mx-auto mt-3">
+                <h6 class="text-uppercase mb-4 font-weight-bold">Products</h6>
+                <p>
+                  <a class="text-white">Category</a>
+                </p>
+                <p>
+                  <a class="text-white">EMONGROUP</a>
+                </p>
+                <p>
+                  <a class="text-white">KENAKATA</a>
+                </p>
+                <p>
+                  <a class="text-white">ASP.NET CORE</a>
+                </p>
+              </div>
+              <!-- Grid column -->
+
+              <hr class="w-100 clearfix d-md-none" />
+
+              <!-- Grid column -->
+              <hr class="w-100 clearfix d-md-none" />
+
+              <!-- Grid column -->
+              <div class="col-md-4 col-lg-3 col-xl-3 mx-auto mt-3">
+                <h6 class="text-uppercase mb-4 font-weight-bold">Contact</h6>
+                <p>
+                  <i class="fas fa-home mr-3"></i> Dhanmondi Dhaka, Road No-01,
+                  Bangladesh
+                </p>
+                <p>
+                  <i class="fas fa-envelope mr-3"></i> emon20011303@gmail.com
+                </p>
+                <p><i class="fas fa-phone mr-3"></i> + 01 519 605 217</p>
+                <p><i class="fas fa-print mr-3"></i> + 01 323 567 891</p>
+              </div>
+              <!-- Grid column -->
+
+              <!-- Grid column -->
+              <div class="col-md-3 col-lg-2 col-xl-2 mx-auto mt-3">
+                <h6 class="text-uppercase mb-4 font-weight-bold">Follow us</h6>
+
+                <!-- Facebook -->
+                <a
+                  class="btn btn-primary btn-floating m-1"
+                  style="background-color: #3b5998"
+                  href="#!"
+                  role="button"
+                  ><i class="fab fa-facebook-f"></i
+                ></a>
+
+                <!-- Twitter -->
+                <a
+                  class="btn btn-primary btn-floating m-1"
+                  style="background-color: #55acee"
+                  href="#!"
+                  role="button"
+                  ><i class="fab fa-twitter"></i
+                ></a>
+
+                <!-- Google -->
+                <a
+                  class="btn btn-primary btn-floating m-1"
+                  style="background-color: #dd4b39"
+                  href="emon20011303@gmail.com"
+                  role="button"
+                  ><i class="fab fa-google"></i
+                ></a>
+
+                <!-- Instagram -->
+                <a
+                  class="btn btn-primary btn-floating m-1"
+                  style="background-color: #ac2bac"
+                  href="https://www.instagram.com/emon5.17/"
+                  role="button"
+                  ><i class="fab fa-instagram"></i
+                ></a>
+
+                <!-- Linkedin -->
+                <a
+                  class="btn btn-primary btn-floating m-1"
+                  style="background-color: #0082ca"
+                  href="https://www.linkedin.com/in/md-emon-hossain-1292a237a/"
+                  role="button"
+                  ><i class="fab fa-linkedin-in"></i
+                ></a>
+                <!-- Github -->
+                <a
+                  class="btn btn-primary btn-floating m-1"
+                  style="background-color: #333333"
+                  href="https://github.com/emonhossainbelkuchi"
+                  role="button"
+                  ><i class="fab fa-github"></i
+                ></a>
+              </div>
+            </div>
+            <!--Grid row-->
+          </section>
+          <!-- Section: Links -->
+        </div>
+        <!-- Grid container -->
+
+        <!-- Copyright -->
+        <div id="copyright"
+          class="text-center p-3"
+          style="background-color: rgba(0, 0, 0, 0.2)"
+        >
+          © 2020 Copyright:
+          <a class="text-white" href="https://mdbootstrap.com/"
+            >Emon Group Of Company.com</a
+          >
+        </div>
+        <!-- Copyright -->
+      </footer>
+      <!-- Footer -->
+    </div>
+    <!-- End of .container -->
+
+    <script src="script.js"></script>
+  </body>
+</html>
